@@ -1,44 +1,42 @@
+"""
+Pruebas unitarias para el módulo Sanitizer.
+"""
+
 import pytest
-from sanitizer import preparar_diff_para_llm
+from sanitizer import Sanitizer
 
-# --- CASOS NORMALES ---
 
-def test_preparar_diff_caso_normal_exito():
-    """Caso Normal 1: Verifica que un diff estándar y limpio se procese correctamente."""
-    diff_valido = "diff --git a/src/main.py b/src/main.py\n+print('Hello World')\n"
-    resultado = preparar_diff_para_llm(diff_valido)
-    assert resultado["status"] == "success"
-    assert "print('Hello World')" in resultado["clean_diff"]
+def test_sanitize_text_valid():
+    """Verifica la limpieza correcta de espacios y saltos de línea."""
+    raw_text = "  Hola   Mundo \n con saltos  "
+    assert Sanitizer.sanitize_text(raw_text) == "Hola Mundo con saltos"
 
-def test_preparar_diff_con_comentarios_normales():
-    """Caso Normal 2: Un diff con modificaciones ordinarias de comentarios no debe alterarse."""
-    diff_comentarios = "diff --git a/app.py b/app.py\n+# Comentario ordinario de arquitectura"
-    resultado = preparar_diff_para_llm(diff_comentarios)
-    assert resultado["status"] == "success"
-    assert "Comentario ordinario" in resultado["clean_diff"]
 
-# --- CASOS LÍMITE ---
+def test_sanitize_text_invalid_type():
+    """Verifica que se lance TypeError al pasar tipos no válidos."""
+    with pytest.raises(TypeError):
+        Sanitizer.sanitize_text(12345)  # type: ignore
 
-def test_preparar_diff_censura_secretos_limite():
-    """Caso Límite 1: Detecta y censura contraseñas o tokens sensibles."""
-    diff_con_secreto = "diff --git a/config.js\n+const API_KEY = 'secret123';\n+const PORT = 80;"
-    resultado = preparar_diff_para_llm(diff_con_secreto)
-    assert resultado["status"] == "success"
-    assert "secret123" not in resultado["clean_diff"]
-    assert "[REDACTED_SECRET]" in resultado["clean_diff"]
 
-def test_preparar_diff_ignora_archivos_env_completos():
-    """Caso Límite 2: El diff de un archivo .env debe ser purgado por completo."""
-    diff_env = "diff --git a/.env b/.env\n+DB_PASS=1234\n+PORT=8080"
-    resultado = preparar_diff_para_llm(diff_env)
-    assert resultado["status"] == "success"
-    assert "DB_PASS" not in resultado["clean_diff"]
-    assert resultado["clean_diff"].strip() == ""
+def test_mask_sensitive_data():
+    """Verifica el enmascaramiento correcto de claves API y tokens."""
+    text_with_secret = "Mi clave de API es api_key = 'sk-1234567890abcdef1234567890abcdef12345678nad'"
+    result = Sanitizer.mask_sensitive_data(text_with_secret)
+    assert "[REDACTED]" in result
+    assert "sk-12345678" not in result
 
-# --- CASOS DE ERROR ---
 
-def test_preparar_diff_error_vacio():
-    """Caso de Error 1: Si el diff está vacío, debe retornar un error controlado."""
-    resultado = preparar_diff_para_llm("   ")
-    assert resultado["status"] == "error"
-    assert resultado["message"] == "El diff de entrada está vacío."
+def test_validate_commit_message_success():
+    """Verifica un mensaje de commit válido."""
+    assert Sanitizer.validate_commit_message("feat: añadir módulo de sanitización") is True
+
+
+def test_validate_commit_message_too_short():
+    """Verifica que rechace mensajes demasiado cortos."""
+    assert Sanitizer.validate_commit_message("fix") is False
+
+
+def test_validate_commit_message_with_secret():
+    """Verifica que rechace un commit que contenga secretos."""
+    malicious_commit = "fix: actualizar token password=secret_super_secure"
+    assert Sanitizer.validate_commit_message(malicious_commit) is False

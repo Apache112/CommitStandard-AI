@@ -1,47 +1,88 @@
+"""
+Módulo Sanitizer - CommitStandard-AI
+Proporciona utilidades para limpiar textos, validar mensajes de commit y 
+enmascarar información sensible por razones de seguridad.
+"""
+
 import re
+from typing import Optional, List
 
-def preparar_diff_para_llm(diff_text: str, max_bytes: int = 51200) -> dict:
-    """
-    Sanitiza y prepara el git diff para ser enviado de forma segura al LLM.
-    """
-    if not diff_text or not diff_text.strip():
-        return {
-            "status": "error",
-            "clean_diff": "",
-            "message": "El diff de entrada está vacío."
-        }
+
+class Sanitizer:
+    """Clase principal para la sanitización y validación de texto y commits."""
+
+    # Patrones comunes para detección de secretos o datos sensibles
+    SENSITIVE_PATTERNS: List[re.Pattern] = [
+        re.compile(r"(?i)(api[_-]?key|secret[_-]?key|password|token)\s*[:=]\s*['\"]?[a-zA-Z0-9_\-\.]{8,}['\"]?"),
+        re.compile(r"ghp_[a-zA-Z0-9]{36}"),  # GitHub Personal Access Token
+        re.compile(r"sk-[a-zA-Z0-9]{48}"),  # OpenAI API Key format
+    ]
+
+    @staticmethod
+    def sanitize_text(text: str) -> str:
+        """
+        Limpia espacios en blanco redundantes y caracteres de control no deseados.
+
+        Args:
+            text (str): Texto de entrada a sanitizar.
+
+        Returns:
+            str: Texto limpio y normalizado.
         
-    if len(diff_text.encode('utf-8')) > max_bytes:
-        return {
-            "status": "error",
-            "clean_diff": "",
-            "message": "Payload demasiado grande. El diff supera el límite permitido."
-        }
+        Raises:
+            TypeError: Si el input no es una cadena de texto.
+        """
+        if not isinstance(text, str):
+            raise TypeError("El argumento de entrada debe ser una cadena de texto (str).")
+        
+        # Eliminar caracteres de control y normalizar espacios múltiples
+        clean_text = re.sub(r'[\r\n\t]+', ' ', text)
+        clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+        return clean_text
 
-    # Regla: Si el diff pertenece a un archivo .env, se elimina por completo
-    if "diff --git a/.env" in diff_text:
-        return {
-            "status": "success",
-            "clean_diff": "",
-            "message": "Diff preparado con éxito."
-        }
+    @classmethod
+    def mask_sensitive_data(cls, text: str) -> str:
+        """
+        Detecta y enmascara posibles credenciales o claves API en el texto.
 
-    # Sanitización de secretos/claves en las líneas del código
-    lineas = diff_text.split('\n')
-    lineas_limpias = []
-    
-    patron_secreto = re.compile(r'(KEY|SECRET|PASSWORD|PASS|TOKEN|KEY)\s*=\s*["\'][^"\']+["\']', re.IGNORECASE)
+        Args:
+            text (str): Texto a revisar.
 
-    for linea in lineas:
-        if patron_secreto.search(linea):
-            # Reemplazar el secreto con la etiqueta de ofuscación
-            linea_modificada = re.sub(r'=(.*)', '= "[REDACTED_SECRET]"', linea)
-            lineas_limpias.append(linea_modificada)
-        else:
-            lineas_limpias.append(linea)
+        Returns:
+            str: Texto con datos sensibles enmascarados con '[REDACTED]'.
+        """
+        if not isinstance(text, str):
+            raise TypeError("El argumento de entrada debe ser una cadena de texto (str).")
 
-    return {
-        "status": "success",
-        "clean_diff": '\n'.join(lineas_limpias),
-        "message": "Diff preparado con éxito."
-    }
+        masked_text = text
+        for pattern in cls.SENSITIVE_PATTERNS:
+            masked_text = pattern.sub("[REDACTED]", masked_text)
+            
+        return masked_text
+
+    @classmethod
+    def validate_commit_message(cls, message: str) -> bool:
+        """
+        Valida que un mensaje de commit cumpla con estándares básicos de calidad y seguridad.
+
+        Args:
+            message (str): Mensaje de commit.
+
+        Returns:
+            bool: True si el mensaje es válido y seguro, False en caso contrario.
+        """
+        if not message or not isinstance(message, str):
+            return False
+        
+        sanitized = cls.sanitize_text(message)
+        
+        # Validar longitud mínima y máxima razonable (ej. entre 5 y 100 caracteres)
+        if not (5 <= len(sanitized) <= 100):
+            return False
+            
+        # Comprobar que no contenga credenciales expuestas
+        for pattern in cls.SENSITIVE_PATTERNS:
+            if pattern.search(message):
+                return False
+                
+        return True
