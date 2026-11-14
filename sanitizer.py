@@ -5,7 +5,7 @@ enmascarar información sensible por razones de seguridad.
 """
 
 import re
-from typing import Optional, List
+from typing import List
 
 
 class Sanitizer:
@@ -13,7 +13,10 @@ class Sanitizer:
 
     # Patrones comunes para detección de secretos o datos sensibles
     SENSITIVE_PATTERNS: List[re.Pattern] = [
-        re.compile(r"(?i)(api[_-]?key|secret[_-]?key|password|token)\s*[:=]\s*['\"]?[a-zA-Z0-9_\-\.]{8,}['\"]?"),
+        re.compile(
+            r"(?i)(api[_-]?key|secret[_-]?key|password|token)\s*[:=]\s*"
+            r"['\"]?[a-zA-Z0-9_\-\.]{8,}['\"]?"
+        ),
         re.compile(r"ghp_[a-zA-Z0-9]{36}"),  # GitHub Personal Access Token
         re.compile(r"sk-[a-zA-Z0-9]{48}"),  # OpenAI API Key format
     ]
@@ -21,7 +24,7 @@ class Sanitizer:
     @staticmethod
     def sanitize_text(text: str) -> str:
         """
-        Limpia espacios en blanco redundantes y caracteres de control no deseados.
+        Limpia espacios en blanco redundantes y caracteres de control.
 
         Args:
             text (str): Texto de entrada a sanitizar.
@@ -33,7 +36,9 @@ class Sanitizer:
             TypeError: Si el input no es una cadena de texto.
         """
         if not isinstance(text, str):
-            raise TypeError("El argumento de entrada debe ser una cadena de texto (str).")
+            raise TypeError(
+                "El argumento de entrada debe ser una cadena de texto (str)."
+            )
         
         # Eliminar caracteres de control y normalizar espacios múltiples
         clean_text = re.sub(r'[\r\n\t]+', ' ', text)
@@ -52,7 +57,9 @@ class Sanitizer:
             str: Texto con datos sensibles enmascarados con '[REDACTED]'.
         """
         if not isinstance(text, str):
-            raise TypeError("El argumento de entrada debe ser una cadena de texto (str).")
+            raise TypeError(
+                "El argumento de entrada debe ser una cadena de texto (str)."
+            )
 
         masked_text = text
         for pattern in cls.SENSITIVE_PATTERNS:
@@ -63,7 +70,8 @@ class Sanitizer:
     @classmethod
     def validate_commit_message(cls, message: str) -> bool:
         """
-        Valida que un mensaje de commit cumpla con estándares básicos de calidad y seguridad.
+        Valida que un mensaje de commit cumpla con estándares 
+        de calidad y seguridad.
 
         Args:
             message (str): Mensaje de commit.
@@ -76,7 +84,7 @@ class Sanitizer:
         
         sanitized = cls.sanitize_text(message)
         
-        # Validar longitud mínima y máxima razonable (ej. entre 5 y 100 caracteres)
+        # Validar longitud mínima y máxima razonable (ej. entre 5 y 100)
         if not (5 <= len(sanitized) <= 100):
             return False
             
