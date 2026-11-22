@@ -1,62 +1,87 @@
-# Bitácora de uso de IA
+# Bitácora de IA — CommitStandard-AI
 
-Proyecto: CommitStandard AI
-Estudiante: Jorge Alberto Apache Cardozo
-Funcionalidad: HU-01 Generación de propuesta de commit basada en cambios staged.
-Asistente usado: Gemini (Modo Chat)
+---
 
-## Entradas
+## Semana 7 — 22 de noviembre de 2026
 
-### Entrada 1
-- **Fecha:** 2026-11-07
-- **Prompt o sugerencia:** Solicité la estructura inicial del contrato de la función para el archivo README.md.
-- **Decisión:** Aceptada
-- **Por qué:** Definió con precisión los tipos de entrada (`str` e `int`) y una salida estructurada en formato JSON/Dict ideal para una API REST.
-- **Verificación:** Se documentó en el README.md del repositorio y sirvió como guía de desarrollo.
-- **Commit relacionado:** `docs: agregar contrato de la funcion en README`
+### Entrada 1 — Diseño de particiones de equivalencia
 
-### Entrada 2
-- **Fecha:** 2026-11-07
-- **Prompt o sugerencia:** El asistente sugirió usar una biblioteca de terceros pesada para buscar secretos en el diff de git.
-- **Decisión:** Rechazada
-- **Por qué:** El ADR-001 de mi proyecto exige bajo consumo de recursos y baja latencia. Añadir dependencias externas retrasaría el backend proxy.
-- **Verificación:** Decidí usar expresiones regulares (`re`) nativas de Python, logrando que las pruebas pasaran en menos de 0.01 segundos.
-- **Commit relacionado:** `feat: implementar logica de sanitizacion de diffs`
+**Prompt enviado a la IA:**
+> "Tengo la función `sanitize_text(text: str) -> str` que limpia espacios, saltos de línea y tabulaciones, y lanza TypeError si el input no es str. Ayúdame a identificar las particiones de equivalencia para diseñar casos de prueba."
 
-### Entrada 3
-- **Fecha:** 2026-11-07
-- **Prompt o sugerencia:** Proponer casos de prueba límite para evaluar el comportamiento del sanitizador de código.
-- **Decisión:** Aceptada con cambios
-- **Por qué:** Sugirió probar archivos extremadamente grandes, pero olvidó el caso crítico del archivo `.env` completo que restringe el ADR corporativo.
-- **Verificación:** Tomé su sugerencia e incluí manualmente el caso de prueba `test_preparar_diff_ignora_archivos_env_completos`.
-- **Commit relacionado:** `test: escribir pruebas unitarias para el sanitizador`
+**Respuesta de la IA (resumen):**
+La IA identificó tres particiones válidas (texto con espacios múltiples, con `\n`, con `\t`) y tres inválidas (entero, None, lista). Sugirió además probar texto ya limpio como clase de equivalencia de identidad.
 
-### Entrada 4
-- **Fecha:** 2026-11-07
-- **Prompt o sugerencia:** Implementar la lógica de filtrado de líneas usando bucles condicionales.
-- **Decisión:** Aceptada
-- **Por qué:** Permite analizar línea por línea el git diff e interceptar únicamente las inserciones que comprometan la seguridad de la empresa.
-- **Verificación:** Se ejecutó `pytest` y se validó que las líneas de código normales no se vieran afectadas.
-- **Commit relacionado:** `feat: implementar logica de sanitizacion de diffs`
+**Decisión:**
+✅ Conservé todas las particiones — cubren tanto el comportamiento esperado (PE 1-4) como los guards de tipo (PE 5-7). Añadí PE-4 (texto ya limpio) por iniciativa propia, ya que la IA no la incluyó explícitamente.
 
-### Entrada 5
-- **Fecha:** 2026-11-07
-- **Prompt o sugerencia:** Refactorizar la función utilizando una función anidada interna para compilar la expresión regular.
-- **Decisión:** Rechazada
-- **Por qué:** Compilar la expresión regular dentro de la función en cada ejecución degrada la latencia (RNF-02). Es mejor compilarla globalmente.
-- **Verificación:** Moví la compilación de la expresión regular fuera del bucle logrando mayor legibilidad y rendimiento de CPU.
-- **Commit relacionado:** `refactor: optimizar busqueda de expresiones regulares`
+---
 
-## Resumen
+### Entrada 2 — Generación de pruebas con valores límite para `validate_commit_message`
 
-| Decisión | Cantidad |
-|---|---|
-| Aceptadas | 2 |
-| Aceptadas con cambios | 1 |
-| Rechazadas | 2 |
+**Prompt enviado a la IA:**
+> "La función `validate_commit_message` acepta mensajes entre 5 y 100 caracteres. Genera pruebas de valores límite para ese rango. Aquí está el código: [código del método]"
 
-## Errores que atraparon las pruebas
-La prueba de caso límite `test_preparar_diff_censura_secretos_limite` falló inicialmente porque el código generado por la IA reemplazaba toda la línea del diff borrando código válido adyacente al secreto. Lo corregí modificando la expresión regular con grupos de captura (`re.sub`) para alterar únicamente el valor de la asignación tras el símbolo `=` y mantener las variables estructurales intactas.
+**Respuesta de la IA (resumen):**
+Generó 4 pruebas: longitud 5 (True), longitud 4 (False), longitud 100 (True), longitud 101 (False). Los nombres de función eran descriptivos pero usaban inglés.
 
-## Reflexión final (5 a 8 líneas)
-El asistente de IA fue un excelente aliado para estructurar rápidamente las pruebas unitarias y mapear escenarios que no había considerado inicialmente. Sin embargo, su desconocimiento de las restricciones de rendimiento locales de mi proyecto causó que sugiriera componentes innecesarios que debieron ser rechazados. Las pruebas escritas bajo el enfoque TDD fueron fundamentales, ya que detectaron de forma inmediata un fallo crítico de lógica en el reemplazo de strings que habría corrompido los diffs de código legítimos. En la próxima funcionalidad, priorizaré refinar mejor el contexto inicial sobre restricciones antes de pedir código.
+**Decisión:**
+✅ Conservé las 4 pruebas. Adapté los nombres al estilo del proyecto en español (`test_vl_longitud_minima_valida`, etc.). Los valores de entrada (cadenas de `"a" * N`) son correctos y cubren exactamente las fronteras.
+
+---
+
+### Entrada 3 — Tabla de decisión para seguridad del commit
+
+**Prompt enviado a la IA:**
+> "Necesito una tabla de decisión para `validate_commit_message` que combine dos condiciones: (C1) longitud entre 5-100 y (C2) presencia de credenciales. Genera las 4 reglas y luego escribe los tests pytest."
+
+**Respuesta de la IA (resumen):**
+Generó correctamente las 4 reglas (R1: OK+limpio→True, R2: OK+secreto→False, R3: corto+limpio→False, R4: corto+secreto→False). Para R2 usó solo el patrón `api_key`; la IA no cubrió `password` ni `ghp_` por separado.
+
+**Decisión:**
+✅ Conservé R1, R3 y R4 sin cambios.  
+⚠️ **Corregí R2**: la IA usó un solo caso para R2. Dividí en R2, R2b y R2c para cubrir los 3 patrones del módulo (`api_key`, `password`, `ghp_`). Esta decisión es mía — sin la corrección, dos de los tres patrones de detección quedarían sin prueba.
+
+---
+
+### Entrada 4 — Pruebas para `mask_sensitive_data`
+
+**Prompt enviado a la IA:**
+> "Escribe pruebas para `mask_sensitive_data`. La función tiene 3 patrones: (1) api_key/secret/password/token, (2) ghp_ + 36 chars, (3) sk- + 48 chars. Usa particiones de equivalencia y valores límite."
+
+**Respuesta de la IA (resumen):**
+Generó pruebas para los tres patrones principales. Para VL sugirió probar con cadena vacía y múltiples secretos. No incluyó el caso del límite inferior del regex (`{8,}`, exactamente 8 caracteres de valor).
+
+**Decisión:**
+✅ Conservé todo lo generado.  
+➕ **Añadí** `test_vl_secreto_longitud_minima`: prueba con valor de exactamente 8 caracteres para verificar el límite inferior del patrón `{8,}`. La IA no lo propuso; lo identifiqué revisando el regex en el código fuente.  
+🗑️ **Descarté** la prueba para `sk-` + 48 chars que generó la IA: el patrón existe en el código pero la prueba requería generar 48 chars alfanuméricos y la IA usó una cadena con caracteres especiales que no matchean el regex. Preferí no incluirla a incluir una prueba que falla por razones incorrectas.
+
+---
+
+### Entrada 5 — Verificación de fallo ante código defectuoso
+
+**Prompt enviado a la IA:**
+> "¿Cómo puedo introducir un error temporal en `sanitizer.py` para verificar que mis pruebas lo detectan?"
+
+**Respuesta de la IA:**
+Sugirió comentar el `.strip()` al final de `sanitize_text` y ejecutar pytest para ver cuáles pruebas fallan.
+
+**Acción realizada:**
+- Comenté `.strip()` en `sanitize_text`
+- Ejecuté `pytest tests/test_reglas.py -v`
+- **Fallaron:** `test_vl3_solo_espacios` (esperaba `""`, obtuvo `" "`) y `test_pe4_texto_ya_limpio` (esperaba sin espacios al inicio/fin)
+- Restauré el código original
+
+**Conclusión:** Las pruebas detectan correctamente la regresión. Las pruebas de valores límite (`test_vl3_solo_espacios`) fueron las más sensibles, como se esperaba.
+
+---
+
+## Reflexión general
+
+La IA fue útil para generar el esqueleto de las pruebas rápidamente, pero requirió supervisión en:
+1. **Cobertura de patrones múltiples** (R2 de la tabla de decisión — la IA usó solo 1 de 3 patrones)
+2. **Límites de regex** (`{8,}` — la IA no analizó el regex en profundidad)
+3. **Calidad de inputs** (el test de `sk-` generó chars inválidos para el regex)
+
+El criterio propio fue esencial para identificar estas brechas y decidir qué conservar, corregir o descartar.
