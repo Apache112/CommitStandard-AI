@@ -12,7 +12,7 @@
 
 ## 1. Resumen
 
-CommitStandard-AI explora cómo ayudar a quienes preparan mensajes de commit y reducir la exposición accidental de secretos. `sanitizer.py` normaliza texto, enmascara patrones conocidos y valida mensajes; `FUNCIONANDO/` contiene un prototipo de preparación de diffs staged. La bitácora disponible documenta el uso de IA para diseñar pruebas, no el proceso completo de los seis módulos. Verifiqué el código con 50 pruebas automatizadas: las 50 pasaron en Python 3.14. El workflow ejecuta pruebas y Ruff sobre ambos componentes. No se afirma un resultado de CI remoto en este informe; debe verificarse en GitHub Actions después de publicar. El prototipo aún no se conecta a un LLM.
+CommitStandard-AI explora cómo ayudar a quienes preparan mensajes de commit y reducir la exposición accidental de secretos. `sanitizer.py` normaliza texto, enmascara patrones conocidos y valida mensajes; `FUNCIONANDO/` contiene un prototipo de preparación de diffs staged. La bitácora disponible documenta el uso de IA para diseñar pruebas, no el proceso completo de los seis módulos. Verifiqué el código con 50 pruebas automatizadas: las 50 pasaron en Python 3.14. El primer workflow remoto completó con éxito pruebas y Ruff en Python 3.10 y 3.14. El prototipo aún no se conecta a un LLM.
 
 ## 2. Problema y usuario
 
@@ -31,7 +31,7 @@ CommitStandard-AI explora cómo ayudar a quienes preparan mensajes de commit y r
 | 3. Diseño | Se documentó la firma, entradas y salidas esperadas del preparador de diff. | No consta en la bitácora disponible | [README](README.md), [FUNCIONANDO/commit_guard.py](FUNCIONANDO/commit_guard.py) | Contrasté contrato, código y pruebas; no se verificó la integración con una API de LLM |
 | 4. Código | `Sanitizer` y el prototipo `commit_guard` implementan normalización, redacción y preparación de diffs. La bitácora no conserva prompts de generación de este código. | No consta | [sanitizer.py](sanitizer.py), [FUNCIONANDO/commit_guard.py](FUNCIONANDO/commit_guard.py), [FUNCIONANDO/main.py](FUNCIONANDO/main.py) | Revisión del código, lint y ejecución de la suite |
 | 5. Pruebas | La IA ayudó a proponer particiones de equivalencia, valores límite y tabla de decisión; también se registraron correcciones y descartes. | Antigravity (Gemini), según la [bitácora](bitacora_ia.md) | [bitacora_ia.md](bitacora_ia.md), [registro_pruebas.md](registro_pruebas.md), [tests](tests) | `pytest`: 50 passed; revisión manual de entradas y salidas |
-| 6. Operación | Se documentó una revisión de seguridad. El workflow ejecuta pruebas y lint en push y pull request. | La herramienta de revisión no está corroborada en la bitácora disponible | [revision_seguridad.md](revision_seguridad.md), [workflow](.github/workflows/tests.yml) | `ruff` y `pytest` localmente; confirmar el run remoto en GitHub Actions tras publicar |
+| 6. Operación | Se documentó una revisión de seguridad. El workflow ejecuta pruebas y lint en push y pull request. | La herramienta de revisión no está corroborada en la bitácora disponible | [revision_seguridad.md](revision_seguridad.md), [workflow](.github/workflows/tests.yml) | `ruff` y `pytest` localmente; el primer run remoto en ambas versiones de Python terminó correctamente |
 
 La tabla distingue entre lo que muestran los artefactos y lo que no se puede confirmar. La bitácora existente se limita a la semana 7, por lo que no permite reconstruir de manera completa el uso de IA de los módulos 1–6.
 
@@ -119,7 +119,7 @@ El número de pruebas aprobadas es una evidencia de que los casos ejecutados sat
 | Se comparte un diff antes de una sanitización completa | Hay un prototipo separado, pero no una API LLM ni pruebas de ejecución real de Git | No enviar diffs automáticamente; completar pruebas de integración y revisión humana |
 | El usuario asume que ya existe generación por IA | El README conserva un contrato de servicio propuesto | Mantener explícita la diferencia entre diseño documentado y funcionalidad implementada |
 
-**Pipeline:** la consulta a GitHub, hecha antes de publicar este workflow, encontró cero ejecuciones. El archivo [`.github/workflows/tests.yml`](.github/workflows/tests.yml) define pruebas y lint para cada push y pull request. El resultado de la ejecución disparada por la publicación debe comprobarse en [GitHub Actions](https://github.com/Apache112/CommitStandard-AI/actions); este informe no anticipa si será exitoso.
+**Pipeline:** el primer run remoto, asociado al commit `38557ce`, terminó correctamente para Python 3.10 y 3.14. La [ejecución inicial](https://github.com/Apache112/CommitStandard-AI/actions/runs/45844098615) registra el resultado; la página de [GitHub Actions](https://github.com/Apache112/CommitStandard-AI/actions) muestra las ejecuciones posteriores y la más reciente.
 
 ### Pendientes
 
