@@ -1,179 +1,53 @@
-# CommitStandard AI 🤖
+# CommitStandard-AI
 
-**Asistente de Commits Convencionales para IDE**
+Prototipo en Python para ayudar a preparar mensajes de commit convencionales y reducir la exposición accidental de algunos patrones de credenciales.
 
 **Estudiante:** Jorge Alberto Apache Cardozo  
-
 **Institución:** Fundación Escuela Tecnológica Jesús Oviedo Pérez (FET)  
+**Docente:** Jorge Luis Trujillo Artunduaga
 
-**Docente:** Jorge Luis Trujillo Artunduaga  
+## Estado actual
 
+La raíz publicada contiene `sanitizer.py`, que proporciona:
 
+- `Sanitizer.sanitize_text`: normaliza espacios, saltos de línea y tabulaciones.
+- `Sanitizer.mask_sensitive_data`: oculta algunos formatos conocidos, como asignaciones a `api_key`, `secret_key`, `password` o `token`, tokens `ghp_` y cadenas con prefijo `sk-`.
+- `Sanitizer.validate_commit_message`: valida tipo y longitud (de 5 a 100 caracteres) y rechaza mensajes que coinciden con los patrones definidos.
 
----
+La historia HU-01 y el contrato de `preparar_diff_para_llm` describen el objetivo de una siguiente fase: obtener el diff de staging, excluir archivos prohibidos, sanitizarlo y validar tamaño. **Ese flujo no está integrado en la raíz publicada.** Tampoco hay generación automática con un servicio LLM.
 
+Los patrones son heurísticos; no detectan todos los secretos y pueden producir falsos positivos. No envíes diffs a un servicio externo basándote únicamente en este prototipo.
 
+## Requisitos e instalación
 
-## Funcionalidad de la semana 5: Sanitizador y Preparador de Diff para IA
-
-
-
-### Historia de Usuario
-
-**ID:** HU-01
-**Título:** Generación de propuesta de commit basada en cambios staged.
-**Criterio de Aceptación:** El sistema debe tomar el git diff de los archivos en staging, eliminar cualquier información sensible (como variables de entorno o credenciales) y validar que el contenido no exceda el límite máximo permitido para optimizar el contexto enviado al LLM. Si el diff está vacío o supera los límites críticos tras la limpieza, debe arrojar un error controlado.
-
-
-### Contrato de la Función
-
-
-
-La función principal encargada de esta lógica en el backend proxy (`CommitGuard API Service`) es `preparar_diff_para_llm`.
-
-
-
-#### Firma de la función:
-
-```python
-
-def preparar_diff_para_llm(diff_text: str, max_bytes: int = 51200) -> dict:
-
-    """
-
-    Recibe el diff bruto de Git, lo sanitiza eliminando líneas con secretos/claves,
-
-    ignora archivos prohibidos (.env) y valida que cumpla con los límites de tamaño.
-
-    """
-
-```
-
-
-
-
-
-
-
-
-
-**Entradas:**
-  - `diff_text` (`str`): El volcado crudo del comando de git diff.
-
-  - `max_bytes` (`int`): Límite de tamaño máximo del payload (por defecto 50 KB / 51,200 bytes).
-
-**Salidas:** Un diccionario (`dict`) con la estructura:
-  - `{ "status": "success", "clean_diff": "...", "message": "Diff preparado con éxito." }`
-
-  - `{ "status": "error", "clean_diff": "", "message": "Motivo del fallo" }`
-
-
-
-### Ejemplos de Entrada y Salida
-
-
-
-#### Ejemplo 1: Caso Normal
-
-**Entrada (`diff_text`):**
-  ```diff
-
-  diff --git a/src/auth.js b/src/auth.js
-
-  +function login(user, provider) {
-
-  ```
-
-**Salida:**
-  ```json
-
-  {
-
-    "status": "success",
-
-    "clean_diff": "diff --git a/src/auth.js b/src/auth.js\n+function login(user, provider) {",
-
-    "message": "Diff preparado con éxito."
-
-  }
-
-  ```
-
-
-
-#### Ejemplo 2: Caso Límite (Censura de Secretos)
-
-**Entrada (`diff_text`):**
-  ```diff
-
-  +db_password = "super_secret_password_123"
-
-  ```
-
-**Salida:**
-  ```json
-
-  {
-
-    "status": "success",
-
-    "clean_diff": "+db_password = \"[REDACTED_SECRET]\"",
-
-    "message": "Diff preparado con éxito."
-
-  }
-
-  ```
-
-
-
-#### Ejemplo 3: Caso de Error (Payload Excedido)
-
-**Entrada:** Un `diff_text` que supera los `51,200` bytes.
-**Salida:**
-  ```json
-
-  {
-
-    "status": "error",
-
-    "clean_diff": "",
-
-    "message": "Payload demasiado grande. El diff supera el límite permitido."
-
-  }
-
-  ```
-
-
-
-### Cómo ejecutar las pruebas
-
-Para ejecutar la suite de pruebas automatizadas del proyecto, asegúrate de tener instalado `pytest` y ejecuta:
-
-```bash
-
-pytest
-
-```
----
-## 1. Qué es el proyecto
-CommitStandard AI es una herramienta diseñada para asistir a los desarrolladores en la generación automatizada de mensajes de commits bajo el estandar convencional, sanitizando de forma segura los cambios en staging (`git diff`) antes de enviarlos a modelos de lenguaje (LLM), evitando filtraciones de secretos o credenciales.
-
-## 2. Requisitos
 - Python 3.10 o superior.
-- Git instalado en el sistema operativo.
-- Gestor de paquetes `pip`.
+- `pytest` y `ruff` para las verificaciones de desarrollo.
 
-## 3. Instalación
-Clona el repositorio y configura un entorno limpio ejecutando:
-```bash
-git clone <url-del-repositorio>
-cd CommitStandard-AI
-python -m venv venv
-# En Windows:
-venv\Scripts\activate
-# En Linux/Mac:
-source venv/bin/activate
-pip install -r requirements.txt
-pip install ruff pytest
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install pytest ruff
+```
+
+## Pruebas y análisis estático
+
+Desde la raíz del repositorio:
+
+```powershell
+python -m pytest -q
+ruff check sanitizer.py test_sanitizer.py tests
+```
+
+La suite usa particiones de equivalencia, valores límite y tablas de decisión en `tests/test_reglas.py`, además de los casos básicos en `test_sanitizer.py`. La ejecución local registrada para la entrega final obtuvo **43 pruebas aprobadas** en Python 3.14.
+
+El workflow [`.github/workflows/tests.yml`](.github/workflows/tests.yml) repite las pruebas y el lint en Python 3.10 y 3.14 para cada push y pull request. La primera ejecución remota aparecerá después de publicar el workflow en GitHub: https://github.com/Apache112/CommitStandard-AI/actions
+
+## Evidencias del seminario
+
+- [Bitácora de IA](bitacora_ia.md)
+- [Registro de pruebas](registro_pruebas.md)
+- [Revisión de seguridad](revision_seguridad.md)
+- [Informe final](informe_final.md)
+- [Diapositivas de sustentación](diapositivas_sustentacion.md)
+
+La bitácora disponible documenta el trabajo de pruebas de la semana 7; no incluye evidencias primarias de todos los módulos 1–6. El informe final distingue explícitamente las evidencias disponibles de las que faltan.

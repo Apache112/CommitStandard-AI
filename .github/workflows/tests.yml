@@ -1,0 +1,27 @@
+name: Tests and lint
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install test tools
+        run: python -m pip install pytest ruff
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Lint project sources
+        run: ruff check sanitizer.py test_sanitizer.py tests
