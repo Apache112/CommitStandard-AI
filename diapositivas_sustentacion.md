@@ -11,7 +11,7 @@
 
 - Usuario previsto: desarrolladores que preparan commits con Git.
 - El README describe HU-01: revisar el diff de staging, sanitizar y controlar tamaño.
-- La raíz publicada implementa normalización, enmascaramiento por patrones y validación de mensajes.
+- `FUNCIONANDO/` incluye un prototipo aparte para sanitizar diffs staged; aún no está integrado con `Sanitizer`.
 - Límite: no encontré la entrevista ni la propuesta original de módulos 1–2.
 
 ## 3. Ciclo de vida y uso de IA
@@ -24,8 +24,8 @@
 ## 4. Producto y arquitectura
 
 - `sanitizer.py`: normaliza texto, oculta algunos patrones de secretos y valida mensajes.
-- `tests/`: pruebas formales; `README.md`: contrato propuesto para sanitizar diffs.
-- Resultado local: 43 pruebas aprobadas en Python 3.14.
+- `tests/`: pruebas formales para ambos componentes; `README.md`: contrato y límites.
+- Resultado local: 50 pruebas aprobadas en Python 3.14.
 - No afirmar como implementado: integración del diff en la raíz ni generación por API de LLM.
 
 ## 5. Verificación crítica de IA
@@ -44,10 +44,10 @@
 
 ## 7. Estado de entrega y pendientes
 
-- Workflow CI preparado para Python 3.10 y 3.14: pruebas + Ruff.
-- GitHub aún muestra cero workflows y cero ejecuciones; falta publicar los cambios.
-- Completar bitácora/evidencias de módulos 1–6 y hacer reproducible el prototipo `FUNCIONANDO/`.
-- Enlace a ejecución remota: pendiente de la primera corrida en GitHub Actions.
+- Workflow CI preparado para Python 3.10 y 3.14: pruebas + Ruff en ambos componentes.
+- La ejecución remota se dispara al publicar; comprueba el resultado en GitHub Actions.
+- Completar bitácora/evidencias de módulos 1–6 y pruebas de integración de la CLI.
+- Adjunta el enlace del run correspondiente a esta publicación.
 
 ## 8. Cierre y preguntas
 

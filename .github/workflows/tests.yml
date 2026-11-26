@@ -24,4 +24,4 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
       - name: Lint project sources
-        run: ruff check sanitizer.py test_sanitizer.py tests
+        run: ruff check sanitizer.py test_sanitizer.py tests FUNCIONANDO

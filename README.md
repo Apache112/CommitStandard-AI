@@ -14,7 +14,7 @@ La raíz publicada contiene `sanitizer.py`, que proporciona:
 - `Sanitizer.mask_sensitive_data`: oculta algunos formatos conocidos, como asignaciones a `api_key`, `secret_key`, `password` o `token`, tokens `ghp_` y cadenas con prefijo `sk-`.
 - `Sanitizer.validate_commit_message`: valida tipo y longitud (de 5 a 100 caracteres) y rechaza mensajes que coinciden con los patrones definidos.
 
-La historia HU-01 y el contrato de `preparar_diff_para_llm` describen el objetivo de una siguiente fase: obtener el diff de staging, excluir archivos prohibidos, sanitizarlo y validar tamaño. **Ese flujo no está integrado en la raíz publicada.** Tampoco hay generación automática con un servicio LLM.
+La carpeta `FUNCIONANDO/` incluye un prototipo independiente con `commit_guard.py` y `main.py` para preparar el diff de staging. No está integrado con `Sanitizer`, y todavía no genera mensajes mediante un servicio LLM. Sus pruebas cubren la sanitización y los límites principales, pero no una ejecución de Git real desde la CLI.
 
 Los patrones son heurísticos; no detectan todos los secretos y pueden producir falsos positivos. No envíes diffs a un servicio externo basándote únicamente en este prototipo.
 
@@ -35,12 +35,18 @@ Desde la raíz del repositorio:
 
 ```powershell
 python -m pytest -q
-ruff check sanitizer.py test_sanitizer.py tests
+ruff check sanitizer.py test_sanitizer.py tests FUNCIONANDO
 ```
 
-La suite usa particiones de equivalencia, valores límite y tablas de decisión en `tests/test_reglas.py`, además de los casos básicos en `test_sanitizer.py`. La ejecución local registrada para la entrega final obtuvo **43 pruebas aprobadas** en Python 3.14.
+La suite usa particiones de equivalencia, valores límite y tablas de decisión en `tests/test_reglas.py`, casos básicos en `test_sanitizer.py` y siete pruebas para el prototipo en `tests/test_commit_guard.py`. La ejecución local obtuvo **50 pruebas aprobadas** en Python 3.14.
 
-El workflow [`.github/workflows/tests.yml`](.github/workflows/tests.yml) repite las pruebas y el lint en Python 3.10 y 3.14 para cada push y pull request. La primera ejecución remota aparecerá después de publicar el workflow en GitHub: https://github.com/Apache112/CommitStandard-AI/actions
+Para probar la CLI desde la raíz del proyecto:
+
+```powershell
+python FUNCIONANDO\main.py
+```
+
+El workflow [`.github/workflows/tests.yml`](.github/workflows/tests.yml) repite las pruebas y el lint en Python 3.10 y 3.14 para cada push y pull request. Consulta https://github.com/Apache112/CommitStandard-AI/actions para ver el resultado de cada ejecución.
 
 ## Evidencias del seminario
 
