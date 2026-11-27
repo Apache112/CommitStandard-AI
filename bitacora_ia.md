@@ -85,3 +85,37 @@ La IA fue útil para generar el esqueleto de las pruebas rápidamente, pero requ
 3. **Calidad de inputs** (el test de `sk-` generó chars inválidos para el regex)
 
 El criterio propio fue esencial para identificar estas brechas y decidir qué conservar, corregir o descartar.
+
+---
+
+## Revisión asistida durante la preparación final — 27 de noviembre de 2026
+
+**Propósito:** comprobar si el prototipo sanitiza los secretos sintéticos que
+pueden aparecer en el contenido de un diff staged, no solo en líneas nuevas.
+
+**Solicitud a la IA (resumen):** revisar `FUNCIONANDO/commit_guard.py` y sus
+pruebas buscando secretos que puedan permanecer en un diff, y proponer pruebas
+de regresión con datos completamente sintéticos.
+
+**Hallazgo que verifiqué:** el bucle original solo llamaba a la redacción en
+líneas que comenzaban con `+`. Una línea de contexto o eliminada podía conservar
+un patrón de credencial. Además, el patrón para claves privadas identificaba el
+marcador `BEGIN`, pero no protegía por sí solo las líneas del cuerpo.
+
+**Primera prueba propuesta y error detectado:** usé `credentials.pem` para el
+caso de clave privada. La prueba falló porque `.pem` está en la lista de
+archivos excluidos, así que no alcanzaba a comprobar la redacción del contenido.
+Revisé el resultado de pytest, cambié el nombre del fixture a `config.py` y
+repetí la prueba. Este cambio evita confundir la exclusión del archivo con la
+redacción del bloque.
+
+**Corrección aplicada:** se redactan patrones en líneas añadidas, eliminadas y
+de contexto; el bloque sintético de clave privada se oculta línea a línea; si
+el bloque queda sin cierre, el preparador devuelve un error y no un resultado
+con apariencia de éxito.
+
+**Verificación:** se añadieron pruebas para secretos en contexto/eliminaciones,
+un bloque multilínea y un bloque incompleto. `py -3.14 -m pytest -q` terminó
+con **53 passed** y `ruff check sanitizer.py test_sanitizer.py tests FUNCIONANDO`
+terminó con **All checks passed**. No se usaron secretos reales. Falta confirmar
+en GitHub Actions el resultado remoto posterior a publicar esta corrección.

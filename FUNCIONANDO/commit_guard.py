@@ -11,15 +11,18 @@ from typing import List
 
 
 # ─── Patrones de secretos a eliminar del diff ───────────────────────────────
+SECRET_ASSIGNMENT_PATTERN = re.compile(
+    r"(?i)(api[_-]?key|secret[_-]?key|password|db_password|token)"
+    r"(\s*[:=]\s*)['\"]?([a-zA-Z0-9_\-\.]{8,})['\"]?"
+)
+PRIVATE_KEY_BEGIN = re.compile(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----", re.IGNORECASE)
+PRIVATE_KEY_END = re.compile(r"-----END [A-Z0-9 ]*PRIVATE KEY-----", re.IGNORECASE)
+
 SENSITIVE_PATTERNS: List[re.Pattern] = [
-    # api_key, secret_key, password, token = "valor"
-    re.compile(
-        r"(?i)(api[_-]?key|secret[_-]?key|password|db_password|token)"
-        r"\s*[:=]\s*['\"]?([a-zA-Z0-9_\-\.]{8,})['\"]?"
-    ),
+    SECRET_ASSIGNMENT_PATTERN,
     re.compile(r"ghp_[a-zA-Z0-9]{36}"),   # GitHub Personal Access Token
     re.compile(r"sk-[a-zA-Z0-9]{48}"),    # OpenAI API Key
-    re.compile(r"(?i)-----BEGIN (RSA |EC )?PRIVATE KEY-----"),  # Claves privadas
+    PRIVATE_KEY_BEGIN,
 ]
 
 # Archivos que nunca deben incluirse en el diff enviado al LLM
@@ -47,26 +50,8 @@ def _es_archivo_prohibido(linea: str) -> bool:
 
 def _redactar_secreto(linea: str) -> str:
     """Reemplaza el valor del secreto con [REDACTED_SECRET] en la línea."""
-    resultado = linea
-    for pattern in SENSITIVE_PATTERNS:
-        resultado = pattern.sub(
-            lambda m: m.group(0).split(m.group(0)[len(m.group(1)):], 1)[0]
-            if hasattr(m, "group") and m.lastindex and m.lastindex >= 1
-            else "[REDACTED_SECRET]",
-            resultado,
-        )
-    # Sustitución directa más simple y confiable
-    resultado = re.sub(
-        r"(?i)(api[_-]?key|secret[_-]?key|password|db_password|token)"
-        r"(\s*[:=]\s*)['\"]?([a-zA-Z0-9_\-\.]{8,})['\"]?",
-        r"\1\2[REDACTED_SECRET]",
-        linea,
-    )
-    for pattern in [
-        re.compile(r"ghp_[a-zA-Z0-9]{36}"),
-        re.compile(r"sk-[a-zA-Z0-9]{48}"),
-        re.compile(r"(?i)-----BEGIN (RSA |EC )?PRIVATE KEY-----"),
-    ]:
+    resultado = SECRET_ASSIGNMENT_PATTERN.sub(r"\1\2[REDACTED_SECRET]", linea)
+    for pattern in SENSITIVE_PATTERNS[1:]:
         resultado = pattern.sub("[REDACTED_SECRET]", resultado)
     return resultado
 
@@ -111,6 +96,7 @@ def preparar_diff_para_llm(diff_text: str, max_bytes: int = MAX_BYTES_DEFAULT) -
     # Procesar línea a línea
     lineas_limpias = []
     ignorar_bloque = False
+    dentro_de_clave_privada = False
 
     for linea in diff_text.splitlines():
         # Detectar inicio de bloque de archivo prohibido
@@ -124,11 +110,29 @@ def preparar_diff_para_llm(diff_text: str, max_bytes: int = MAX_BYTES_DEFAULT) -
         if ignorar_bloque:
             continue
 
-        # Redactar secretos en líneas añadidas (+)
-        if linea.startswith("+") and _contiene_secreto(linea):
-            linea = _redactar_secreto(linea)
+        es_contenido = (
+            linea.startswith(("+", "-", " "))
+            and not linea.startswith(("+++", "---"))
+        )
+        if es_contenido:
+            prefijo, contenido = linea[0], linea[1:]
+            inicio_clave = PRIVATE_KEY_BEGIN.search(contenido) is not None
+            fin_clave = PRIVATE_KEY_END.search(contenido) is not None
+
+            if dentro_de_clave_privada or inicio_clave:
+                linea = prefijo + "[REDACTED_SECRET]"
+                dentro_de_clave_privada = not fin_clave
+            elif _contiene_secreto(contenido):
+                linea = prefijo + _redactar_secreto(contenido)
 
         lineas_limpias.append(linea)
+
+    if dentro_de_clave_privada:
+        return {
+            "status": "error",
+            "clean_diff": "",
+            "message": "El diff contiene un bloque de clave privada incompleto.",
+        }
 
     clean_diff = "\n".join(lineas_limpias)
 

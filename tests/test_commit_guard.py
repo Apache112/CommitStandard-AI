@@ -42,6 +42,49 @@ def test_preparar_diff_redacta_token_github():
     assert "[REDACTED_SECRET]" in resultado["clean_diff"]
 
 
+def test_preparar_diff_redacta_secretos_en_contexto_y_lineas_eliminadas():
+    diff = _diff(
+        "config.py",
+        " token=ContextSecret123\n-token=DeletedSecret123",
+    )
+
+    resultado = preparar_diff_para_llm(diff)
+
+    assert resultado["status"] == "success"
+    assert "ContextSecret123" not in resultado["clean_diff"]
+    assert "DeletedSecret123" not in resultado["clean_diff"]
+    assert resultado["clean_diff"].count("[REDACTED_SECRET]") == 2
+
+
+def test_preparar_diff_redacta_bloque_multilinea_de_clave_privada():
+    diff = _diff(
+        "config.py",
+        "+-----BEGIN RSA PRIVATE KEY-----\n"
+        "+SYNTHETIC_PRIVATE_KEY_MATERIAL\n"
+        "+-----END RSA PRIVATE KEY-----",
+    )
+
+    resultado = preparar_diff_para_llm(diff)
+
+    assert resultado["status"] == "success"
+    assert "SYNTHETIC_PRIVATE_KEY_MATERIAL" not in resultado["clean_diff"]
+    assert "PRIVATE KEY-----" not in resultado["clean_diff"]
+    assert resultado["clean_diff"].count("[REDACTED_SECRET]") == 3
+
+
+def test_preparar_diff_rechaza_bloque_incompleto_de_clave_privada():
+    diff = _diff(
+        "config.py",
+        "+-----BEGIN PRIVATE KEY-----\n"
+        "+SYNTHETIC_PRIVATE_KEY_MATERIAL",
+    )
+
+    resultado = preparar_diff_para_llm(diff)
+
+    assert resultado["status"] == "error"
+    assert resultado["clean_diff"] == ""
+
+
 def test_preparar_diff_excluye_env_y_conserva_archivo_permitido():
     diff = _diff(".env", "+password=abcdefgh") + "\n" + _diff(
         "README.md", "+contenido público"

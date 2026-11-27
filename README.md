@@ -1,27 +1,27 @@
 # CommitStandard-AI
 
-Prototipo en Python para ayudar a preparar mensajes de commit convencionales y reducir la exposición accidental de algunos patrones de credenciales.
+Prototipo en Python para validar mensajes de commit y preparar un diff de Git con
+redacción heurística de algunos patrones sensibles antes de compartirlo.
 
-**Estudiante:** Jorge Alberto Apache Cardozo  
-**Institución:** Fundación Escuela Tecnológica Jesús Oviedo Pérez (FET)  
-**Docente:** Jorge Luis Trujillo Artunduaga
+## Alcance implementado
 
-## Estado actual
+- `sanitizer.py` normaliza texto, valida mensajes de 5 a 100 caracteres y oculta
+  algunos patrones conocidos de credenciales.
+- `FUNCIONANDO/commit_guard.py` lee diffs staged, excluye ciertos archivos,
+  redacta patrones conocidos y aplica un límite de tamaño.
+- `FUNCIONANDO/main.py` muestra el diff limpio y una instrucción para pedir una
+  sugerencia a un asistente externo manualmente.
 
-La raíz publicada contiene `sanitizer.py`, que proporciona:
+El proyecto **no** llama a una API de LLM, no genera commits automáticamente y
+no integra la arquitectura Gateway descrita como diseño objetivo. La detección
+por patrones no garantiza que todos los secretos o datos personales sean
+identificados. No se debe compartir código usando solo este prototipo como
+garantía de privacidad.
 
-- `Sanitizer.sanitize_text`: normaliza espacios, saltos de línea y tabulaciones.
-- `Sanitizer.mask_sensitive_data`: oculta algunos formatos conocidos, como asignaciones a `api_key`, `secret_key`, `password` o `token`, tokens `ghp_` y cadenas con prefijo `sk-`.
-- `Sanitizer.validate_commit_message`: valida tipo y longitud (de 5 a 100 caracteres) y rechaza mensajes que coinciden con los patrones definidos.
-
-La carpeta `FUNCIONANDO/` incluye un prototipo independiente con `commit_guard.py` y `main.py` para preparar el diff de staging. No está integrado con `Sanitizer`, y todavía no genera mensajes mediante un servicio LLM. Sus pruebas cubren la sanitización y los límites principales, pero no una ejecución de Git real desde la CLI.
-
-Los patrones son heurísticos; no detectan todos los secretos y pueden producir falsos positivos. No envíes diffs a un servicio externo basándote únicamente en este prototipo.
-
-## Requisitos e instalación
+## Requisitos
 
 - Python 3.10 o superior.
-- `pytest` y `ruff` para las verificaciones de desarrollo.
+- `pytest` y `ruff` para desarrollo.
 
 ```powershell
 python -m venv .venv
@@ -29,31 +29,33 @@ python -m venv .venv
 python -m pip install pytest ruff
 ```
 
-## Pruebas y análisis estático
+## Ejecutar y verificar
 
 Desde la raíz del repositorio:
 
 ```powershell
 python -m pytest -q
 ruff check sanitizer.py test_sanitizer.py tests FUNCIONANDO
-```
-
-La suite usa particiones de equivalencia, valores límite y tablas de decisión en `tests/test_reglas.py`, casos básicos en `test_sanitizer.py` y siete pruebas para el prototipo en `tests/test_commit_guard.py`. La ejecución local obtuvo **50 pruebas aprobadas** en Python 3.14.
-
-Para probar la CLI desde la raíz del proyecto:
-
-```powershell
 python FUNCIONANDO\main.py
 ```
 
-El workflow [`.github/workflows/tests.yml`](.github/workflows/tests.yml) repite las pruebas y el lint en Python 3.10 y 3.14 para cada push y pull request. Consulta https://github.com/Apache112/CommitStandard-AI/actions para ver el resultado de cada ejecución.
+La CLI solo procesa cambios preparados en staging (`git add`). Si no hay cambios
+staged, informa que no hay diff que procesar; no es una falla de ejecución.
+Consulta [la guía de operación](docs/operacion.md) antes de usarla.
 
 ## Evidencias del seminario
 
+- [Propuesta del proyecto](docs/propuesta.md)
+- [Requisitos y brechas](docs/requisitos.md)
+- [Diseño y ADR](docs/diseno-adr.md)
+- [Evidencias por módulo](docs/evidencia_modulos.md)
 - [Bitácora de IA](bitacora_ia.md)
 - [Registro de pruebas](registro_pruebas.md)
-- [Revisión de seguridad](revision_seguridad.md)
-- [Informe final](informe_final.md)
-- [Diapositivas de sustentación](diapositivas_sustentacion.md)
+- [Revisión de seguridad (con nota de alcance)](revision_seguridad.md)
+- [Informe final](informe_final.md) y [PDF](informe_final.pdf)
+- [Diapositivas](diapositivas_sustentacion.md) y [PDF](diapositivas_sustentacion.pdf)
 
-La bitácora disponible documenta el trabajo de pruebas de la semana 7; no incluye evidencias primarias de todos los módulos 1–6. El informe final distingue explícitamente las evidencias disponibles de las que faltan.
+La documentación distingue los artefactos originales del trabajo retrospectivo
+de preparación de esta entrega. El documento de requisitos recibido para el
+módulo 3 corresponde a un minimercado, no a CommitStandard-AI, y por ello no se
+presenta como evidencia válida de requisitos de este proyecto.

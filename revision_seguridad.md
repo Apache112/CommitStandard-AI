@@ -1,3 +1,12 @@
+> **Nota de alcance para la entrega final:** este documento contiene notas de
+> revisiones preliminares. Algunas afirmaciones no tienen un commit,
+> comprobación reproducible o evidencia enlazada en el repositorio; por ello no
+> se presentan como una auditoría independiente ni como certificación OWASP.
+> La versión actual solo ofrece detección heurística por patrones y no garantiza
+> que todos los secretos o datos personales se eliminen. La revisión final y las
+> pruebas reproducibles están descritas en [el informe](informe_final.md) y en
+> [la bitácora](bitacora_ia.md).
+
 # Informe de Revisión de Código y Seguridad - CommitStandard-AI
 
 ## 1. Introducción

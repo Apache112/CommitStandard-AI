@@ -1,156 +1,203 @@
 # Informe final del proyecto integrador
 
-**Proyecto:** CommitStandard-AI — asistente para commits convencionales
-
-**Estudiante:** Jorge Alberto Apache Cardozo
-
+**Proyecto:** CommitStandard-AI — prototipo de preparación de commits convencionales
 **Repositorio:** https://github.com/Apache112/CommitStandard-AI
+**Fecha:** 27 de noviembre de 2026
 
-**Fecha:** 2026-11-26
-
-> **Alcance de esta versión del informe.** Se contrastaron las afirmaciones con los archivos del repositorio y se ejecutaron las pruebas localmente. La copia disponible no contiene evidencia primaria de todos los módulos 1–6 ni una ejecución remota de GitHub Actions. La carpeta `FUNCIONANDO/` contiene un prototipo versionado por separado del sanitizador principal; sus límites de verificación se declaran en vez de atribuir resultados no comprobados.
+> La consigna prohíbe incluir datos personales reales en el informe y el
+> repositorio. Por ello, este PDF no incluye nombres, correos ni identificadores
+> personales.
 
 ## 1. Resumen
 
-CommitStandard-AI explora cómo ayudar a quienes preparan mensajes de commit y reducir la exposición accidental de secretos. `sanitizer.py` normaliza texto, enmascara patrones conocidos y valida mensajes; `FUNCIONANDO/` contiene un prototipo de preparación de diffs staged. La bitácora disponible documenta el uso de IA para diseñar pruebas, no el proceso completo de los seis módulos. Verifiqué el código con 50 pruebas automatizadas: las 50 pasaron en Python 3.14. El primer workflow remoto completó con éxito pruebas y Ruff en Python 3.10 y 3.14. El prototipo aún no se conecta a un LLM.
+CommitStandard-AI es un prototipo local en Python que valida mensajes de commit
+y prepara un `git diff --cached` con exclusión de algunos archivos y redacción
+heurística de patrones conocidos. La propuesta académica prevé consultar un
+modelo de lenguaje, pero el código publicado no hace llamadas a servicios LLM,
+no genera mensajes automáticamente ni implementa el Gateway del diseño. La IA
+se documentó en el laboratorio de fundamentos, en la propuesta, en el diseño y
+en la preparación de pruebas; la bitácora histórica no cubre todas las fases.
+La suite local se verificó con pytest y Ruff; se añadieron pruebas que
+encontraron y comprobaron una omisión real en la sanitización de líneas de
+contexto/eliminación y bloques de claves privadas. El material de requisitos
+recibido corresponde a otro proyecto, por lo que la brecha se declara en vez de
+presentarse como evidencia válida.
 
 ## 2. Problema y usuario
 
-**Usuario objetivo:** desarrolladores que crean commits convencionales y quieren evitar incluir accidentalmente credenciales u otros valores sensibles en el texto que revisan o comparten.
+El usuario previsto es una persona desarrolladora que prepara cambios en Git y
+quiere mensajes de commit consistentes, además de reducir el riesgo de
+compartir accidentalmente credenciales incluidas en un diff. La propuesta del
+módulo 2 fija como meta que 18 de 20 mensajes sugeridos sean aceptados sin
+edición; esa meta no se ha medido porque el repositorio no integra un LLM.
 
-**Necesidad:** contar con una revisión local previa a la generación de un mensaje de commit. La propuesta documentada en el [README](README.md) plantea tomar el diff de staging, retirar secretos y archivos prohibidos, y validar el tamaño antes de entregar el texto a un LLM. La motivación es reducir errores humanos y limitar la divulgación de código.
+La solución actualmente disponible valida mensajes localmente y ofrece una CLI
+que obtiene cambios staged, filtra algunos archivos y patrones, y muestra el
+texto preparado para que la persona lo revise. El flujo no envía datos a un
+servicio externo. El [README](README.md), la [propuesta](docs/propuesta.md) y el
+[código](FUNCIONANDO/main.py) distinguen el prototipo del producto objetivo.
 
-**Límite de la evidencia:** no se encontró en esta copia una propuesta del módulo 1, registro de entrevista o validación de usuario del módulo 2. Por tanto, la descripción del usuario y su necesidad se presenta como el planteamiento del proyecto, no como hallazgo confirmado mediante entrevista.
+**Límite de requisitos:** el documento recibido para el módulo 3 describe una
+aplicación de minimercado con ventas, inventario y fiados, no CommitStandard-AI.
+No se puede usar esa entrevista como evidencia del usuario de este proyecto.
+Los requisitos resumidos en [docs/requisitos.md](docs/requisitos.md) son una
+reconstrucción retrospectiva que debe validarse; no reemplaza el artefacto
+primario faltante.
 
 ## 3. La IA en el ciclo de vida
 
-| Módulo y fase | Uso de IA que puede sustentarse | Herramienta registrada | Evidencia disponible | Verificación |
-|---|---|---|---|---|
-| 1. Fundamentos | La bitácora disponible no registra esta fase. | No consta | No se encontró propuesta del módulo 1 | No verificable con los archivos recibidos |
-| 2. Requisitos | El README contiene HU-01 y un contrato propuesto para preparar el diff. No se encontró el historial de prompts ni la entrevista. | No consta en la bitácora disponible | [README](README.md) | Contrasté el contrato con el prototipo separado en `FUNCIONANDO/`; no se comprobó la validación con usuarios |
-| 3. Diseño | Se documentó la firma, entradas y salidas esperadas del preparador de diff. | No consta en la bitácora disponible | [README](README.md), [FUNCIONANDO/commit_guard.py](FUNCIONANDO/commit_guard.py) | Contrasté contrato, código y pruebas; no se verificó la integración con una API de LLM |
-| 4. Código | `Sanitizer` y el prototipo `commit_guard` implementan normalización, redacción y preparación de diffs. La bitácora no conserva prompts de generación de este código. | No consta | [sanitizer.py](sanitizer.py), [FUNCIONANDO/commit_guard.py](FUNCIONANDO/commit_guard.py), [FUNCIONANDO/main.py](FUNCIONANDO/main.py) | Revisión del código, lint y ejecución de la suite |
-| 5. Pruebas | La IA ayudó a proponer particiones de equivalencia, valores límite y tabla de decisión; también se registraron correcciones y descartes. | Antigravity (Gemini), según la [bitácora](bitacora_ia.md) | [bitacora_ia.md](bitacora_ia.md), [registro_pruebas.md](registro_pruebas.md), [tests](tests) | `pytest`: 50 passed; revisión manual de entradas y salidas |
-| 6. Operación | Se documentó una revisión de seguridad. El workflow ejecuta pruebas y lint en push y pull request. | La herramienta de revisión no está corroborada en la bitácora disponible | [revision_seguridad.md](revision_seguridad.md), [workflow](.github/workflows/tests.yml) | `ruff` y `pytest` localmente; el primer run remoto en ambas versiones de Python terminó correctamente |
+| Fase/módulo | Uso de IA que sí está documentado | Herramienta | Evidencia y verificación |
+|---|---|---|---|
+| 1. Fundamentos | Comparación de dos asistentes para generar una función de validación de correo; el informe académico registra pruebas ejecutadas y comparación de salidas. | DeepSeek y Gemini, según el original del módulo 1. | Resumen anonimizado en [evidencia_modulos.md](docs/evidencia_modulos.md). Es aprendizaje general, no una funcionalidad del producto. |
+| 2. Propuesta | Se declara que Gemini ayudó a refinar la redacción y se propuso medir 18/20 sugerencias aceptadas. | Gemini. | [Propuesta](docs/propuesta.md). La meta no se ejecutó ni se midió. |
+| 3. Requisitos | No hay un documento primario de requisitos de CommitStandard-AI entre los materiales recibidos. El archivo del módulo 3 es de otro proyecto y se excluye. | No verificable para este producto. | [Nota de discrepancia y reconstrucción](docs/requisitos.md). Requiere validación del estudiante/docente. |
+| 4. Diseño | IA apoyó alternativas, diagramas, modelo de datos y rutas; el original registra correcciones humanas por privacidad y coherencia. | Gemini. | [Diseño y ADR](docs/diseno-adr.md). Se contrastaron los diagramas y rutas con la decisión de arquitectura; el backend descrito no está implementado. |
+| 5. Código y pruebas | La bitácora registra asistencia para particiones, valores límite y tablas de decisión. La revisión final con IA ayudó a buscar huecos en la sanitización del diff. | Antigravity/Gemini en la bitácora existente; asistente de IA para la revisión final. | [Bitácora](bitacora_ia.md), [pruebas](tests) y [código](FUNCIONANDO/commit_guard.py). Los nuevos tests reproducen y luego cubren el defecto. |
+| 6. Operación | No se encontró uso histórico de IA para despliegue u operación. Se configuró CI para verificar cambios. | GitHub Actions (automatización, no IA). | [Workflow](.github/workflows/tests.yml), [guía operativa](docs/operacion.md) y [ejecuciones](https://github.com/Apache112/CommitStandard-AI/actions). La página muestra el resultado vigente. |
 
-La tabla distingue entre lo que muestran los artefactos y lo que no se puede confirmar. La bitácora existente se limita a la semana 7, por lo que no permite reconstruir de manera completa el uso de IA de los módulos 1–6.
+La evidencia disponible permite explicar el uso de IA, pero **no demuestra uso
+documentado y verificado de IA en las seis fases**. En particular, no se debe
+presentar CI como IA ni atribuirle a la IA generación de código que la bitácora
+no registra.
 
-## 4. Verificación: propuestas de IA revisadas
+## 4. Verificación: propuestas incorrectas, incompletas o riesgosas
 
-Los tres ejemplos verificables corresponden a la fase de pruebas; no se atribuyen errores a otras fases porque la bitácora disponible no los documenta.
+### Caso 1: ubicación de la base de datos en el diseño
 
-### Caso 1: cobertura insuficiente de la regla con secretos
+- **Fase:** diseño.
+- **Qué propuso la IA:** el borrador C4 situó la base de datos de métricas en el
+  equipo del desarrollador.
+- **Qué estaba mal:** contradice la alternativa Gateway seleccionada, que
+  centraliza las métricas en el backend.
+- **Cómo se detectó:** comparación de los contenedores C4 con el ADR y la
+  matriz de alternativas.
+- **Qué se hizo:** se movió la base de datos al límite del backend. El original
+  del módulo 4 documenta la corrección; no hay un commit histórico individual
+  asociado a ese cambio.
+- **Evidencia:** [diseño y ADR](docs/diseno-adr.md).
 
-- **Fase:** Pruebas.
-- **Qué propuso la IA:** usar un solo caso con `api_key` para la regla de mensaje válido con secreto.
-- **Qué faltaba:** el código contempla patrones distintos, entre ellos credenciales tipo `password` y tokens `ghp_`; probar un solo patrón no ejercitaba esas variantes.
-- **Cómo lo detecté:** comparé la propuesta registrada con los patrones y los casos de prueba.
-- **Qué hice:** documenté casos separados para `api_key`, `password` y `ghp_` en [tests/test_reglas.py](tests/test_reglas.py). La bitácora describe la decisión en [bitacora_ia.md](bitacora_ia.md).
+### Caso 2: retención de diffs fuente en el modelo de datos
 
-### Caso 2: límite inferior de longitud omitido
+- **Fase:** diseño.
+- **Qué propuso la IA:** el modelo inicial incluía guardar contenido del diff.
+- **Riesgo:** conservar código fuente y datos que pueden ser sensibles no era
+  necesario para calcular aceptación y aumentaba el riesgo de exposición.
+- **Cómo se detectó:** revisión de los atributos frente al objetivo de medir
+  feedback sin almacenar el diff original.
+- **Qué se hizo:** se retiró la persistencia del código fuente del diseño. La
+  decisión está descrita en el original del módulo 4, sin commit histórico
+  individual.
+- **Evidencia:** [diseño y ADR](docs/diseno-adr.md).
 
-- **Fase:** Pruebas.
-- **Qué propuso la IA:** probar una cadena vacía y múltiples secretos, pero no el mínimo de ocho caracteres del patrón de asignación.
-- **Qué faltaba:** el cuantificador `{8,}` representa una frontera del comportamiento que debía verificarse expresamente.
-- **Cómo lo detecté:** inspeccioné el patrón en [sanitizer.py](sanitizer.py) y contrasté el límite con los casos existentes.
-- **Qué hice:** añadí el caso `token=12345678` en [tests/test_reglas.py](tests/test_reglas.py). La prueba confirma el mínimo del patrón de asignación, no todos los formatos posibles de secretos.
+### Caso 3: una prueba generada para `sk-` no ejercitaba el patrón
 
-### Caso 3: prueba que pasaba por una entrada que no coincidía
+- **Fase:** pruebas.
+- **Qué propuso la IA:** una entrada con caracteres que no pertenecían a la
+  clase alfanumérica del regex para `sk-`.
+- **Qué estaba mal:** un test verde con una entrada que no coincide no demuestra
+  que se detecte el patrón.
+- **Cómo se detectó:** inspección del regex y de la entrada sugerida.
+- **Qué se hizo:** se descartó esa prueba en vez de contabilizarla como
+  cobertura; la brecha se mantuvo explícita en el informe.
+- **Evidencia:** [bitácora](bitacora_ia.md) y [patrones](sanitizer.py).
 
-- **Fase:** Pruebas.
-- **Qué propuso la IA:** una entrada para el patrón `sk-` que incluía caracteres que no pertenecen a la clase alfanumérica del regex.
-- **Qué estaba mal:** un test puede pasar sin demostrar que el patrón objetivo detectó el texto.
-- **Cómo lo detecté:** ejecuté la prueba de forma aislada y comprobé el resultado, no solo el código de salida de pytest.
-- **Qué hice:** descarté esa prueba según la [bitácora](bitacora_ia.md). La prueba de enmascaramiento para OpenAI no queda demostrada por la suite actual y sigue siendo una brecha.
+### Verificación adicional de código en la preparación final
+
+La revisión asistida por IA observó que el prototipo solo buscaba secretos en
+líneas añadidas (`+`). Pruebas con valores sintéticos confirmaron que un patrón
+en una línea de contexto o eliminada podía sobrevivir; otro caso confirmó que
+solo se ocultaba el marcador de una clave privada multilínea, no su contenido.
+Se amplió la redacción a líneas añadidas, eliminadas y de contexto, se añadió
+estado para el bloque privado y se decidió fallar de forma explícita si el
+bloque queda incompleto. La primera prueba sugerida usó un archivo `.pem`, que
+el filtro de archivos ya excluye; pytest mostró que la prueba no estaba midiendo
+la redacción. Se corrigió el fixture a un archivo sintético permitido y se
+volvieron a ejecutar las pruebas.
+
+**Conclusión frente a la rúbrica:** hay casos verificables de diseño y pruebas,
+y una corrección de código actual. Sin embargo, no hay tres casos válidos de
+errores de IA en tres fases distintas con commits históricos trazables. Los
+ejemplos de requisitos del minimercado pertenecen a otro proyecto y no se usan
+para completar artificialmente ese criterio.
 
 ## 5. Estado final del sistema
 
-### Arquitectura verificada
+### Arquitectura y funcionalidades
 
-- [sanitizer.py](sanitizer.py): clase `Sanitizer` con normalización, patrones de enmascaramiento y validación de mensajes.
-- [test_sanitizer.py](test_sanitizer.py) y [tests/test_reglas.py](tests/test_reglas.py): pruebas unitarias del sanitizador.
-- [FUNCIONANDO/commit_guard.py](FUNCIONANDO/commit_guard.py) y [FUNCIONANDO/main.py](FUNCIONANDO/main.py): prototipo separado para leer el diff staged, filtrar algunos archivos y secretos, y mostrar el diff limpio.
-- [tests/test_commit_guard.py](tests/test_commit_guard.py): casos automatizados para el comportamiento principal del prototipo.
+- `sanitizer.py`: normalización, redacción de patrones conocidos y validación
+  de mensajes de 5 a 100 caracteres.
+- `FUNCIONANDO/commit_guard.py`: obtención del diff staged, exclusión de una
+  lista limitada de archivos, redacción heurística, control de tamaño y manejo
+  explícito de bloques de clave privada.
+- `FUNCIONANDO/main.py`: CLI que imprime el diff preparado y un prompt manual.
+- `tests/`: pruebas de reglas, sanitización y comportamiento del prototipo.
 
-El prototipo está versionado en una carpeta independiente, no integrado con `Sanitizer`. Las pruebas ejercitan la preparación de texto, pero no ejecutan la CLI contra un repositorio Git de prueba. Ninguna versión integra una llamada a una API de LLM.
+No existen plugin de IDE, backend Gateway, endpoints, base de datos, generación
+automática de mensajes ni conexión a un proveedor LLM. El [diseño](docs/diseno-adr.md)
+describe una arquitectura objetivo, no funcionalidades terminadas.
 
-### Funcionalidades y verificación
+### Verificación
 
-| Funcionalidad | Estado comprobado |
-|---|---|
-| Normalizar espacios, saltos de línea y tabulaciones | Implementada y probada |
-| Enmascarar patrones comunes de credenciales | Implementada con cobertura parcial |
-| Validar tipo y longitud del mensaje de commit | Implementada y probada |
-| Preparar y sanitizar texto de diff para `git diff --cached` | Prototipo en `FUNCIONANDO/`; sanitización probada, ejecución real de Git/CLI pendiente |
-| Generar automáticamente un mensaje mediante API de LLM | No implementada |
-
-**Pruebas:** `py -3.14 -m pytest -q` produjo **50 passed** el 26 de noviembre de 2026: 37 pruebas en `tests/test_reglas.py`, 6 en `test_sanitizer.py` y 7 en `tests/test_commit_guard.py`. `ruff check sanitizer.py test_sanitizer.py tests FUNCIONANDO` también pasó localmente. El resultado local de CI no sustituye una ejecución de GitHub Actions.
-
-### Condiciones para considerar completa la HU-01
-
-La HU-01 del README se refiere al diff staged, no solo a validar un mensaje. Para evitar confundir el estado actual con el objetivo, estas son condiciones pendientes que deben probarse antes de presentarla como terminada:
-
-1. **Origen y errores:** probar la ejecución de Git desde un repositorio temporal y distinguir ausencia de cambios de errores del proceso.
-2. **Archivos excluidos:** ampliar pruebas a todos los patrones de archivos prohibidos y confirmar que no se descarten archivos permitidos por coincidencias parciales.
-3. **Redacción:** añadir fixtures sintéticos para todos los patrones (incluidos `sk-` y claves privadas) y entradas negativas para vigilar falsos positivos.
-4. **Tamaño:** agregar pruebas de frontera exacta, un byte por debajo y un byte por encima del límite de bytes UTF-8.
-5. **Vacíos y tipos:** probar diff vacío, entrada de tipo inválido y resultado vacío después de exclusiones, con errores observables y no salidas de éxito engañosas.
-6. **Publicación al LLM:** no enviar el texto a un servicio externo por defecto; si se integra, documentar proveedor, consentimiento, tratamiento, retención y opciones para operar sin conexión.
-
-Estas condiciones convierten la intención del requisito en evidencias repetibles. No son resultados atribuidos a la implementación actual; sirven como criterio para la siguiente iteración y para revisar si los cambios futuros satisfacen el objetivo de privacidad.
-
-### Qué demuestra la suite y qué no demuestra
-
-| Área | Evidencia observable | Alcance del resultado |
-|---|---|---|
-| Normalización de texto | 11 casos formales entre particiones y valores límite | Confirma espacios repetidos, saltos, tabulaciones y tipos inválidos en las entradas cubiertas |
-| Validación de mensajes | 16 casos formales, incluidos límites de 5/4 y 100/101 caracteres y reglas de decisión | Confirma las reglas existentes de longitud y los patrones incluidos en los casos |
-| Enmascaramiento | 10 casos formales con valores limpios, patrones comunes, entradas inválidas y secretos múltiples | No constituye una evaluación exhaustiva de formatos reales de credenciales |
-| Suite previa | 6 pruebas adicionales en `test_sanitizer.py` | Repite algunos comportamientos con ejemplos básicos |
-| Preparación del diff | 7 casos en `tests/test_commit_guard.py` | Cubre secretos sintéticos, `.env`, entradas vacías y tamaño; no ejecuta Git real ni la CLI |
-
-El número de pruebas aprobadas es una evidencia de que los casos ejecutados satisfacen sus aserciones; no es una medida de cobertura ni una prueba de seguridad. No se generó un informe de cobertura. En particular, no hay una prueba aislada que demuestre el patrón `sk-` con una clave alfanumérica válida, y el código no elimina ni rechaza todos los secretos posibles. Por esa razón, el resultado debe interpretarse como verificación funcional parcial del sanitizador.
-
-### Riesgos operacionales que permanecen
-
-| Riesgo | Evidencia en la versión publicada | Mitigación pendiente |
-|---|---|---|
-| Un secreto no coincide con los patrones conocidos | Detección basada en regex en [sanitizer.py](sanitizer.py) | Ampliar fixtures sintéticos y evaluar detectores especializados; mantener revisión humana |
-| Se comparte un diff antes de una sanitización completa | Hay un prototipo separado, pero no una API LLM ni pruebas de ejecución real de Git | No enviar diffs automáticamente; completar pruebas de integración y revisión humana |
-| El usuario asume que ya existe generación por IA | El README conserva un contrato de servicio propuesto | Mantener explícita la diferencia entre diseño documentado y funcionalidad implementada |
-
-**Pipeline:** el primer run remoto, asociado al commit `38557ce`, terminó correctamente para Python 3.10 y 3.14. La [ejecución inicial](https://github.com/Apache112/CommitStandard-AI/actions/runs/45844098615) registra el resultado; la página de [GitHub Actions](https://github.com/Apache112/CommitStandard-AI/actions) muestra las ejecuciones posteriores y la más reciente.
+La suite comprende pruebas de particiones de equivalencia, valores límite,
+tablas de decisión y casos de sanitización del diff. La ejecución local final
+con `py -3.14 -m pytest -q` obtuvo **53 passed**; `ruff check sanitizer.py
+test_sanitizer.py tests FUNCIONANDO` terminó con **All checks passed**. El
+workflow corre pytest y Ruff en Python 3.10 y 3.14; consulta la página de
+[GitHub Actions](https://github.com/Apache112/CommitStandard-AI/actions) para
+verificar el resultado remoto posterior a la publicación de estos cambios.
 
 ### Pendientes
 
-1. Añadir pruebas de integración de la CLI y de obtención de diffs staged en un repositorio temporal.
-2. Completar la bitácora de IA de los módulos 1–6 y adjuntar la propuesta, entrevista, decisiones de diseño y evidencia de operación que no están en esta copia.
-3. Añadir pruebas que demuestren detección de cada patrón sensible y evaluar falsos negativos; el enmascaramiento por regex no garantiza descubrir todo secreto.
-4. Publicar el workflow y enlazar su primera ejecución exitosa.
-5. Documentar los límites del prototipo separado y decidir si se integra con `Sanitizer` o permanece como herramienta experimental.
+1. Validar y versionar los requisitos correctos de CommitStandard-AI; el
+   documento recibido de módulo 3 es incompatible.
+2. Completar la bitácora de IA de las seis fases con evidencia contemporánea,
+   herramienta, propósito, verificación y commit.
+3. Añadir integración de la CLI en un repositorio Git temporal y ampliar casos
+   de archivos, falsos positivos y formatos de secretos.
+4. Si se implementa el Gateway/LLM, definir consentimiento, retención, controles
+   de privacidad, manejo de fallos y medición real de 18/20.
+5. Obtener casos de error de IA de tres fases distintas y enlazar los commits
+   originales; no se reconstruyen de memoria.
+6. Completar el inventario de licencias y una política de uso/atribución de IA.
 
 ## 6. Reflexión ética y legal
 
-| Principio | Decisión y análisis | Evidencia / límite |
+| Principio | Decisión aplicada al proyecto | Evidencia y límite |
 |---|---|---|
-| Datos personales — Ley 1581 de 2012 | No se envían diffs a un servicio externo desde la implementación verificada. Sin embargo, un diff puede contener datos personales; no es correcto afirmar que el proyecto nunca los procesa. | Código local en [sanitizer.py](sanitizer.py); no hay evaluación legal formal |
-| Sesgo y falsos positivos | Los patrones explícitos evitan depender de un modelo para detectar estos formatos, pero pueden omitir secretos distintos y marcar texto legítimo. La cobertura de falsos positivos y negativos es incompleta. | Patrones en [sanitizer.py](sanitizer.py), casos en [tests/test_reglas.py](tests/test_reglas.py) |
-| Transparencia | La bitácora registra decisiones de la semana 7 y reconoce propuestas descartadas; no contiene una bitácora completa de todos los módulos. | [bitacora_ia.md](bitacora_ia.md) |
-| Responsabilidad | Revisé las pruebas propuestas y descarté una que podía pasar por la razón equivocada. La aprobación final del código y de su publicación sigue siendo responsabilidad humana. | [registro_pruebas.md](registro_pruebas.md) |
-| Propiedad intelectual y política de uso | No se encontró un inventario de fuentes, licencias o política institucional de IA. No afirmo que todo el código sea original solo por no ver dependencias de ejecución externas. | `pyproject.toml` y bitácora disponibles; revisión de licencias pendiente |
+| Datos personales — Ley 1581 de 2012 | La herramienta local no envía diffs a un proveedor ni conserva una base de datos. Aun así, los diffs pueden contener datos personales, identificadores o secretos; el sistema los procesa localmente. | [CLI](FUNCIONANDO/main.py), [sanitizador](FUNCIONANDO/commit_guard.py). No hay evaluación legal formal. |
+| Sesgo y errores de clasificación | Las expresiones regulares pueden omitir formatos no conocidos o marcar texto legítimo. No se afirma detección completa. | Patrones y [casos de prueba](tests/test_commit_guard.py). |
+| Transparencia | Se declara que la IA no está integrada y que el Gateway es diseño futuro. Se excluyen del informe los datos identificativos de los documentos fuente. | [README](README.md), [evidencia por módulo](docs/evidencia_modulos.md). |
+| Responsabilidad | La revisión final y aprobación de cualquier diff o commit son humanas. La salida limpia es heurística y exige inspección. | [Guía de operación](docs/operacion.md). |
+| Propiedad intelectual | El repositorio no contiene inventario completo de licencias ni una política institucional de IA. Se deben verificar antes de una distribución externa. | Brecha documentada; no se declara originalidad total a partir de la ausencia de dependencias externas. |
 
-El dilema principal es la tensión entre automatizar la generación de commits y proteger el código que se compartiría con un LLM externo. La decisión verificable fue no incorporar una llamada remota en la versión publicada. La sanitización por patrones es una defensa parcial, no una garantía: antes de enviar cambios a un proveedor se requiere revisión humana, consentimiento y cumplimiento de las políticas de la organización.
+El dilema principal es la utilidad de pedir a un LLM mensajes de commit frente
+al riesgo de exponer código fuente y datos personales. La decisión actual fue
+no implementar la llamada externa y no afirmar que los patrones garantizan
+privacidad. Antes de integrar un proveedor se necesita informar al usuario,
+obtener consentimiento, definir tratamiento/retención y completar pruebas
+independientes.
 
 ## 7. Aprendizajes
 
-Aprendí a convertir requisitos de texto en particiones de equivalencia, valores límite y reglas de decisión, y a inspeccionar si una prueba realmente ejercita el comportamiento que dice cubrir. Confié demasiado en que un test que pasa demuestra su utilidad; el caso del patrón `sk-` mostró que hay que revisar el input y la salida observada. En un siguiente ciclo separaría las evidencias por módulo desde el inicio, mantendría una bitácora contemporánea y ejecutaría el pipeline remoto antes de declarar terminada una entrega.
+Aprendí que una prueba aprobada solo aporta evidencia si la entrada realmente
+ejercita la regla que pretende comprobar. También confirmé que la IA puede
+acelerar propuestas de diseño y pruebas, pero requiere contraste con el código,
+los criterios del usuario y los límites de privacidad. El error de alcance
+entre el documento de requisitos y el proyecto demuestra la importancia de
+verificar que cada artefacto pertenezca al mismo producto. En una siguiente
+iteración mantendría prompts, salidas, revisiones y commits en una bitácora
+desde cada módulo, y mediría el criterio 18/20 con una muestra reproducible.
 
-## 8. Anexos
+## 8. Anexos y evidencias
 
+- [Mapa de evidencias de los módulos 1–6](docs/evidencia_modulos.md)
+- [Propuesta](docs/propuesta.md)
+- [Requisitos y brecha del módulo 3](docs/requisitos.md)
+- [Diseño y ADR](docs/diseno-adr.md)
+- [Guía de operación](docs/operacion.md)
 - [Bitácora de IA](bitacora_ia.md)
 - [Registro de pruebas](registro_pruebas.md)
 - [Revisión de seguridad](revision_seguridad.md)
-- [Código del sanitizador](sanitizer.py)
-- [Pruebas formales](tests/test_reglas.py)
-- [Workflow de CI](.github/workflows/tests.yml)
-- Repositorio: https://github.com/Apache112/CommitStandard-AI
+- [Código y pruebas](tests)
+- [Repositorio](https://github.com/Apache112/CommitStandard-AI)
+- [Última ejecución de GitHub Actions](https://github.com/Apache112/CommitStandard-AI/actions)
